@@ -21,6 +21,7 @@ fn nth_irreducible_degree(n: i64) -> Degree {
 // Compute the remainder modulo x^k, of the idx-th polynomial of degree deg.
 fn get_remainder(deg: i64, idx: i64, k: i64) -> (Poly, i64) {
     let rem_to_irred = count_irreds_with_remainder(deg, k);
+    assert!(rem_to_irred.iter().sum::<i64>() == IRRED_OF_DEG[deg as usize]);
     let mut rems: Vec<Poly> = (1..(1 << k)).step_by(2).collect::<Vec<_>>();
     rems.sort_by_key(|&rem| rem.reverse_bits());
     let mut num_irred = 0;
@@ -38,11 +39,14 @@ fn get_remainder(deg: i64, idx: i64, k: i64) -> (Poly, i64) {
 // Insert special case if n == 0
 pub fn nth_irreducible(n: i64) -> Poly {
     let deg = nth_irreducible_degree(n);
+    if deg <= 2 {
+        return [0b10, 0b11, 0b111][n as usize];
+    }
     let num_irred = (1..deg).map(|d| IRRED_OF_DEG[d as usize]).sum::<i64>();
     let idx = n - num_irred;
-    let k = std::cmp::max(1, deg / 3);
+    let k = std::cmp::max(2, deg / 3);
     let (f, idx) = get_remainder(deg, idx, k);
     let mut irreds = sieve::get_irreds(deg, f, k);
     irreds.sort_by_key(|g| g.reverse_bits());
-    irreds[idx as usize]
+    irreds[idx as usize].reverse_bits() >> (63 - deg)
 }

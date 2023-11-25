@@ -17,7 +17,10 @@ fn remove_multiples(leftovers: &mut [Vec<i64>], r: i64, f: Poly, k: i64) {
     mark(leftovers, deg - r, r, f, k);
     // We don't have to do all degrees because the values they 
     // help compute are not necessary anymore for future computations.
-    for d in (r..(deg - 2 * r)).rev() {
+    // Fun note: equal sign is only necessary when multiple irreducibles of degree r
+    // are going to appear. (This is most of the time so it seems senseless to check
+    // for that condition).
+    for d in (r..=(deg - 2 * r)).rev() {
         mark(leftovers, d, r, f, k);
     }   
     // remove the multiple f itself.
