@@ -6,9 +6,6 @@ mod alg;
 use self::polys::*;
 use self::count::*;
 
-
-
-
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     match args.len() {
@@ -19,11 +16,10 @@ fn main() {
                 .parse()
                 .expect("Invalid numeric literal format");
             let f = alg::nth_irreducible(n);
-            println!(
-                "Found {} in {} seconds",
-                polys::poly_to_string(f),
-                now.elapsed().as_micros() as f64 / 1_000_000.
-            );
+            let comp_time = now.elapsed().as_micros() as f64 / 1_000_000.;
+            println!("nth-irreducible (string): {}.", poly_to_string(f));
+            println!("nth-irreducible (numeric): {f}");
+            println!("Computation time: {comp_time} seconds");
         }
         _ => {
             println!("Usage: [PROGRAM_NAME] [n]");
