@@ -64,7 +64,7 @@ fn collect_irreds(d: Degree, f: Poly, k: Degree, is_irred: &[bool]) -> Vec<Poly>
         }
     }
     irreducibles
-    
+
     // Reversing bits is expensive, but we can perhaps iterate over them in reverse
     //(0u64..(1 << (d - k))).filter(|&i| is_irred[i as usize]).map(|i| (1 << d) + (i << k) + f).collect()
     //(0u64..(1 << (d - k))).map(|i| i.reverse_bits() >> (64 - d + k)).filter(|&i| is_irred[i as usize]).map(|i| (1 << d) + (i << k) + f).collect()

@@ -1,10 +1,10 @@
-mod polys;
-mod count;
-mod sieve;
 mod alg;
+mod count;
+mod polys;
+mod sieve;
 
-use self::polys::*;
 use self::count::*;
+use self::polys::*;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

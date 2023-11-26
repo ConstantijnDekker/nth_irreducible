@@ -48,7 +48,6 @@ pub fn xor_mult(a: Poly, b: Poly) -> Poly {
     a
 }
 
-
 // Compute inverse of f modulo x^k.
 pub fn get_inverse(f: Poly, k: i64) -> Poly {
     let mut r = f;
