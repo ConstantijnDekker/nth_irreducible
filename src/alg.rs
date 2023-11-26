@@ -21,11 +21,27 @@ fn nth_irreducible_degree(n: i64) -> Degree {
 // Compute the remainder modulo x^k, of the idx-th polynomial of degree deg.
 fn get_remainder(deg: i64, idx: i64, k: i64) -> (Poly, i64) {
     let rem_to_irred = count_irreds_with_remainder(deg, k);
-    assert!(rem_to_irred.iter().sum::<i64>() == IRRED_OF_DEG[deg as usize]);
-    let mut rems: Vec<Poly> = (1..(1 << k)).step_by(2).collect::<Vec<_>>();
-    rems.sort_by_key(|&rem| rem.reverse_bits());
+    //let mut rems: Vec<Poly> = (1..(1 << k)).step_by(2).collect::<Vec<_>>();
+    //rems.sort_by_key(|&rem| rem.reverse_bits());
     let mut num_irred = 0;
+    let mut rem: usize = 0;
+    let extra = rem_to_irred[rem];
+    if num_irred + extra > idx as i64 {
+        return ((2*rem + 1) as Poly, rem as i64 - num_irred);
+    }
+    num_irred += extra;
+    for i in 1u64..(1 << (k - 1)) {
+        let w = (i.trailing_zeros() + 1) as i64;
+        let mask = ((1 << w) - 1) << (k - 1 - w);
+        rem ^= mask;
+        let extra = rem_to_irred[rem];
+        if num_irred + extra > idx {
+            return ((2*rem + 1) as Poly, idx - num_irred);
+        }
+        num_irred += extra;
+    }
 
+    /*
     for rem in rems {
         let extra = rem_to_irred[(rem >> 1) as usize];
         if num_irred + extra > idx {
@@ -33,6 +49,7 @@ fn get_remainder(deg: i64, idx: i64, k: i64) -> (Poly, i64) {
         }
         num_irred += extra; // num_irred <= idx
     }
+    */
     (0, 0)
 }
 
@@ -44,9 +61,14 @@ pub fn nth_irreducible(n: i64) -> Poly {
     }
     let num_irred = (1..deg).map(|d| IRRED_OF_DEG[d as usize]).sum::<i64>();
     let idx = n - num_irred;
-    let k = std::cmp::max(2, deg / 3);
+    let k = std::cmp::max(2, (deg + 2) / 3);
+    let now = std::time::Instant::now();
     let (f, idx) = get_remainder(deg, idx, k);
-    let mut irreds = sieve::get_irreds(deg, f, k);
-    irreds.sort_by_key(|g| g.reverse_bits());
-    irreds[idx as usize].reverse_bits() >> (63 - deg)
+    let t1 = now.elapsed().as_micros();
+    let irreds = sieve::get_irreds(deg, f, k);
+    let t2 = now.elapsed().as_micros();
+    dbg!(t1, t2 - t1);
+    // sort_by?
+    reverse(irreds[idx as usize])
+    //irreds[idx as usize].reverse_bits() >> (63 - deg)
 }

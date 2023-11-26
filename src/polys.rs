@@ -32,6 +32,10 @@ pub fn degree(f: Poly) -> Degree {
     (63 - f.leading_zeros()) as Degree
 }
 
+pub fn reverse(f: Poly) -> Poly {
+    f.reverse_bits() >> (63 - degree(f))
+}
+
 /* Xor multiply with native assembly instruction. */
 pub fn xor_mult(a: Poly, b: Poly) -> Poly {
     let mut a = a;
