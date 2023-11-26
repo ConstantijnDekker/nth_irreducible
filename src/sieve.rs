@@ -1,4 +1,4 @@
-use super::polys::*;
+use super::polys::{Degree, Poly, self};
 
 // Compute irreducibles of degree at most d using a sieve.
 fn sieve_erat(d: Degree) -> Vec<Poly> {
@@ -8,9 +8,9 @@ fn sieve_erat(d: Degree) -> Vec<Poly> {
     for g in (3..(1 << (d + 1))).step_by(2) {
         if is_irred[(g >> 1) as usize] {
             irreducibles.push(g);
-            let r = degree(g);
+            let r = polys::degree(g);
             for h in (1..(1 << (d + 1 - r))).step_by(2) {
-                is_irred[(xor_mult(h, g) >> 1) as usize] = false;
+                is_irred[(polys::xor_mult(h, g) >> 1) as usize] = false;
             }
         }
     }
@@ -37,10 +37,10 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree) -> Vec<Poly> {
     let mut is_irred: Vec<bool> = vec![true; 1 << (d - k)];
 
     for g in small_irreds {
-        let r = d - degree(g); // we must have r >= k.
-        let h = (xor_mult(get_inverse(g, k), f) & ((1 << k) - 1)) + (1 << r);
+        let r = d - polys::degree(g); // we must have r >= k.
+        let h = (polys::xor_mult(polys::get_inverse(g, k), f) & ((1 << k) - 1)) + (1 << r);
         for i in 0..(1 << (r - k)) {
-            is_irred[poly_to_idx(d, k, xor_mult(h + (i << k), g))] = false;
+            is_irred[poly_to_idx(d, k, polys::xor_mult(h + (i << k), g))] = false;
             //is_irred[((xor_mult(h + (i << k), g) ^ (1 << d)) >> k) as usize] = false;
         }
     }

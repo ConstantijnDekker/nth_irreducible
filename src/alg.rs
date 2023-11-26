@@ -1,4 +1,6 @@
-use super::*;
+use super::polys::{self, Poly, Degree};
+use super::sieve;
+use super::count;
 
 // Number of irreducibles of each degree. These are not hard to compute, but this is a well-known sequence.
 const IRRED_OF_DEG: [i64; 64] = [
@@ -80,7 +82,7 @@ fn nth_irreducible_degree(n: i64) -> Degree {
 
 // Compute the remainder modulo x^k, of the idx-th polynomial of degree deg.
 fn get_remainder(deg: i64, idx: i64, k: i64) -> (Poly, i64) {
-    let rem_to_irred = count_irreds_with_remainder(deg, k);
+    let rem_to_irred = count::count_irreds_with_remainder(deg, k);
     //let mut rems: Vec<Poly> = (1..(1 << k)).step_by(2).collect::<Vec<_>>();
     //rems.sort_by_key(|&rem| rem.reverse_bits());
     let mut num_irred = 0;
@@ -129,6 +131,6 @@ pub fn nth_irreducible(n: i64) -> Poly {
     let t2 = now.elapsed().as_micros();
     dbg!(t1, t2 - t1);
     // sort_by?
-    reverse(irreds[idx as usize])
+    polys::reverse(irreds[idx as usize])
     //irreds[idx as usize].reverse_bits() >> (63 - deg)
 }
