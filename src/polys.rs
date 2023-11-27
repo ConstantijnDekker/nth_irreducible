@@ -32,9 +32,14 @@ pub fn degree(f: Poly) -> Degree {
     (63 - f.leading_zeros()) as Degree
 }
 
+pub fn reverse(f: Poly, k: Degree) -> Poly {
+    f.reverse_bits() >> (64 - k)
+}
+
+/*
 pub fn reverse(f: Poly) -> Poly {
     f.reverse_bits() >> (63 - degree(f))
-}
+}*/
 
 /* Xor multiply with native assembly instruction. */
 pub fn xor_mult(a: Poly, b: Poly) -> Poly {
@@ -59,4 +64,20 @@ pub fn get_inverse(f: Poly, k: i64) -> Poly {
         }
     }
     g
+}
+
+// Compute odd h such that xor_mult(g, h) is odd and has
+// the first k bits equal to f.
+pub fn comp_multiplier(f: Poly, g: Poly, k: Degree) -> Poly {
+    let mut res = f ^ g;
+    let d = degree(f);
+    let r = d - degree(g); // assume r >= k
+    let mut h = 1;
+    for i in (1..=k).rev() {
+        if res & (1 << (i + d - k)) != 0 {
+            res ^= g << (i + r - k);
+            h |= 1 << (i + r - k);
+        }
+    }
+    h
 }
