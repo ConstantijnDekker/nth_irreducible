@@ -32,7 +32,7 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
     let sieve_len = d / 2;
     let mut total_irred = 0;
     for i in 0..(1 << (d - k - sieve_len)) {
-        let (f, num_irred) = sieve_block(d, f + (i << sieve_len), d - sieve_len, &small_irreds, idx - total_irred);
+        let (f, num_irred) = sieve_block(d, f + (i << sieve_len + 1), d - sieve_len, &small_irreds, idx - total_irred);
         if !f.is_none() {
             return f;
         }
@@ -40,7 +40,7 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
     }
     None
     /*
-    let mut is_irred: Vec<bool> = vec![true; 1 << (d - k)];
+    let mut is_irred: Vec<bool> = vec![true; 1 << (d - k)];git sta
 
     for g in small_irreds {
         let r = d - polys::degree(g); // we must have r >= k.

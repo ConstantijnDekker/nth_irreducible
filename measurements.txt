@@ -12,3 +12,5 @@ irreducible number 5 * 10^12:
 228587642928581
 correct:
 228588532244961
+
+irreducible number 10 * 10^12:
