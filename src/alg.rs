@@ -84,6 +84,9 @@ fn nth_irreducible_degree(n: i64) -> Degree {
 fn get_remainder(deg: i64, idx: i64, k: i64) -> (Poly, i64) {
     let rem_to_irred = count::count_irreds_with_remainder(deg, k);
     let mut num_irred = 0;
+    // Iterate in bit reverse order, because this
+    // resembles how the remainders are ordered when they are rotated and
+    // on the start (leading).
     for rev_rem in (1 << (k - 1))..(1 << k) {
         let rem = polys::reverse(rev_rem, k);
         let extra = rem_to_irred[(rem >> 1) as usize];
@@ -108,4 +111,25 @@ pub fn nth_irreducible(n: i64) -> Poly {
     let (f, idx) = get_remainder(deg, idx, k);
     let irreds = sieve::get_irreds(deg, polys::reverse(f, k) << (deg + 1 - k), k);
     irreds[idx as usize]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_nth_irreducible_small() {
+        assert_eq!(nth_irreducible(0), 0b10);
+        assert_eq!(nth_irreducible(1), 0b11);
+        assert_eq!(nth_irreducible(2), 0b111);
+        assert_eq!(nth_irreducible(3), 0b1011);
+        assert_eq!(nth_irreducible(4), 0b1101);
+        assert_eq!(nth_irreducible(5), 0b10011);
+        assert_eq!(nth_irreducible(6), 0b11001);
+        assert_eq!(nth_irreducible(7), 0b11111);
+    }
+
+    #[test]
+    fn test_nth_irreducible100() {
+        assert_eq!(nth_irreducible(100), 0b1100010011);
+    }
 }
