@@ -83,11 +83,9 @@ fn nth_irreducible_degree(n: i64) -> Degree {
 // Compute the remainder modulo x^k, of the idx-th polynomial of degree deg.
 fn get_remainder(deg: i64, idx: i64, k: i64) -> (Poly, i64) {
     let rem_to_irred = count::count_irreds_with_remainder(deg, k);
-    let mut rems: Vec<Poly> = (1..(1 << k)).step_by(2).collect::<Vec<_>>();
-    rems.sort_by_key(|&rem| rem.reverse_bits());
-
     let mut num_irred = 0;
-    for rem in rems {
+    for rev_rem in (1 << (k - 1))..(1 << k) {
+        let rem = polys::reverse(rev_rem, k);
         let extra = rem_to_irred[(rem >> 1) as usize];
         if num_irred + extra > idx {
             return (rem as Poly, idx - num_irred);
