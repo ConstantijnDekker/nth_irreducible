@@ -83,6 +83,8 @@ fn nth_irreducible_degree(n: i64) -> Degree {
 // Compute the remainder modulo x^k, of the idx-th polynomial of degree deg.
 fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
     let rem_to_irred = count::count_irreds_with_remainder(deg, k);
+    // It does not hurt to check this
+    assert_eq!(rem_to_irred.iter().sum::<i64>(), IRRED_OF_DEG[deg as usize]);
     let mut num_irred = 0;
     // Iterate in bit reverse order, because this
     // resembles how the remainders are ordered when they are rotated and
@@ -95,7 +97,7 @@ fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
         }
         num_irred += extra; // num_irred <= idx
     }
-    (0, 0)
+    panic!("Could not find remainder!");
 }
 
 // Insert special case if n == 0
@@ -109,9 +111,6 @@ pub fn nth_irreducible(n: i64) -> Poly {
     let k = std::cmp::max(2, (deg + 2) / 3);
     let now = std::time::Instant::now();
     let (f, idx) = get_remainder(deg, idx, k);
-    if f == 0 {
-        panic!("Could not find remainder!");
-    }
     let t1 = now.elapsed().as_micros();
     let irred = sieve::get_irreds(deg, polys::reverse(f, k) << (deg + 1 - k), k, idx);
     let t2 = now.elapsed().as_micros();
