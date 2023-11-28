@@ -29,17 +29,17 @@ pub fn poly_to_string(f: Poly) -> String {
     s
 }
 
-/* Find the degree of a polynomial. */
+// Find the degree of a polynomial.
 pub fn degree(f: Poly) -> Degree {
     (63 - f.leading_zeros()) as Degree
 }
 
-/* Reverse last k bits of a polynomial (and zero out others). */
+// Reverse last k bits of a polynomial (and zero out others).
 pub fn reverse(f: Poly, k: Degree) -> Poly {
     f.reverse_bits() >> (64 - k)
 }
 
-/* Xor multiply with native assembly instruction. */
+// Xor multiply with native assembly instruction.
 pub fn xor_mult(a: Poly, b: Poly) -> Poly {
     let mut a = a;
     unsafe {
@@ -66,3 +66,59 @@ pub fn comp_multiplier(f: Poly, g: Poly, k: Degree) -> Poly {
     }
     h
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_poly_to_string_zero() {
+        let f: Poly = 0;
+        assert_eq!(poly_to_string(f), "0");
+    }
+    #[test]
+    fn test_poly_to_string_zeroth_pow() {
+        let f: Poly = 0b1001;
+        assert_eq!(poly_to_string(f), "x^3 + 1");
+    }
+    #[test]
+    fn test_poly_to_string_first_pow() {
+        let f: Poly = 0b10010;
+        assert_eq!(poly_to_string(f), "x^4 + x");
+    }
+
+    #[test]
+    fn test_degree() {
+        let f: Poly = 0b1001;
+        assert_eq!(degree(f), 3);
+    }
+    #[test]
+    fn test_degree_one() {
+        let f = 1;
+        assert_eq!(degree(f), 0);
+    }
+
+    #[test]
+    fn test_reverse() {
+        assert_eq!(reverse(0b1011, 4), 0b1101);
+    }
+    #[test]
+    fn test_reverse_leading_zeros() {
+        assert_eq!(reverse(0b0111, 4), 0b1110);
+    }
+    #[test]
+    fn test_reverse_zeroing() {
+        assert_eq!(reverse(0b1101, 2), 0b0010);
+    }
+
+    #[test]
+    fn test_xor_mult() {
+        assert_eq!(xor_mult(0b11, 0b11), 0b101);
+    }
+
+    #[test]
+    fn test_comp_multiplier() {
+        assert_eq!(comp_multiplier(0b10100000, 0b1111, 3), 0b11101);
+    }
+}
+
