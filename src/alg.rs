@@ -109,6 +109,9 @@ pub fn nth_irreducible(n: i64) -> Poly {
     let k = std::cmp::max(2, (deg + 2) / 3);
     let now = std::time::Instant::now();
     let (f, idx) = get_remainder(deg, idx, k);
+    if f == 0 {
+        panic!("Could not find remainder!");
+    }
     let t1 = now.elapsed().as_micros();
     let irred = sieve::get_irreds(deg, polys::reverse(f, k) << (deg + 1 - k), k, idx);
     let t2 = now.elapsed().as_micros();
@@ -134,5 +137,10 @@ mod tests {
     #[test]
     fn test_nth_irreducible100() {
         assert_eq!(nth_irreducible(100), 0b1100010011);
+    }
+
+    #[test]
+    fn test_nth_irreducible22() {
+        assert_eq!(nth_irreducible(22), 117);
     }
 }

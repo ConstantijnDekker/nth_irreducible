@@ -32,7 +32,13 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
     let sieve_len = d / 2;
     let mut total_irred = 0;
     for i in 0..(1 << (d - k - sieve_len)) {
-        let (f, num_irred) = sieve_block(d, f + (i << sieve_len + 1), d - sieve_len, &small_irreds, idx - total_irred);
+        let (f, num_irred) = sieve_block(
+            d,
+            f + (i << sieve_len + 1),
+            d - sieve_len,
+            &small_irreds,
+            idx - total_irred,
+        );
         if !f.is_none() {
             return f;
         }
@@ -60,7 +66,13 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
 // Compute all irreducibles of degree d starting with f.
 // Take the happy path where 2k <= d.
 // In that case the degree of a sieving prime w
-pub fn sieve_block(d: Degree, f: Poly, k: Degree, small_irreds: &[Poly], idx: i64) -> (Option<Poly>, i64) {
+pub fn sieve_block(
+    d: Degree,
+    f: Poly,
+    k: Degree,
+    small_irreds: &[Poly],
+    idx: i64,
+) -> (Option<Poly>, i64) {
     let mut is_irred: Vec<bool> = vec![true; 1 << (d - k)];
 
     for &g in small_irreds {
