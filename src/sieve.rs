@@ -45,22 +45,6 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
         total_irred += num_irred;
     }
     None
-    /*
-    let mut is_irred: Vec<bool> = vec![true; 1 << (d - k)];git sta
-
-    for g in small_irreds {
-        let r = d - polys::degree(g); // we must have r >= k.
-        let h = polys::comp_multiplier(f, g, k);
-        for i in 0..(1 << (r - k)) {
-            is_irred[poly_to_idx(d, k, polys::xor_mult(h + (i << 1), g))] = false;
-        }
-    }
-
-    (0u64..(1 << (d - k)))
-        .filter(|&i| is_irred[i as usize])
-        .map(|i| f + (i << 1) + 1)
-        .nth(idx)
-        */
 }
 
 // Compute all irreducibles of degree d starting with f.
