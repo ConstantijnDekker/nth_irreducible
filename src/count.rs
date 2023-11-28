@@ -27,23 +27,29 @@ fn remove_multiples(leftovers: &mut [Vec<i64>], r: Degree, f: Poly, k: Degree) {
     leftovers[r as usize][(f >> 1) as usize] -= 1;
 }
 
+fn initialise(deg: Degree, k: Degree) -> Vec<Vec<i64>> {
+    let mut leftovers: Vec<Vec<i64>> = vec![vec![0; 1 << (k - 1)]; deg as usize + 1];
+
+    // Polynomials of degree less than equal to k
+    for d in 0..k {
+        for g in (1..(1 << d)).step_by(2) {
+            leftovers[d as usize][(g >> 1) as usize] = 1;
+        }
+    }
+    for d in k..=deg {
+        for g in (1..(1 << k)).step_by(2) {
+            leftovers[d as usize][(g >> 1) as usize] = 1 << (d - k);
+        }
+    }
+    
+    leftovers
+}
+
 // Return a vector containing at position f
 // all irreducibles with remainder Xf + 1 of degree deg.
 pub fn count_irreds_with_remainder(deg: Degree, k: Degree) -> Vec<i64> {
-    let mut leftovers: Vec<Vec<i64>> = vec![vec![0; 1 << (k - 1)]; deg as usize + 1];
-
-    // Initialise the irreducible candidates that we will remove.
-    for g in (1..(1 << k)).step_by(2) {
-        for d in 0..=deg {
-            if d < k {
-                if d == polys::degree(g) {
-                    leftovers[d as usize][(g >> 1) as usize] = 1;
-                }
-            } else if polys::degree(g) <= d {
-                leftovers[d as usize][(g >> 1) as usize] = 1 << (d - k);
-            }
-        }
-    }
+    let mut leftovers = initialise(deg, k);
+    dbg!(&leftovers);
 
     // Remove multiples of each remaining prime in degree order
     for d in 1..=(deg / 2) {
