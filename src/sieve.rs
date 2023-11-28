@@ -1,6 +1,13 @@
+/* This module contains the functions necessary for sieving.
+ * This is the process of removing all of the multiples from a set
+ * (in our case of irreducibles) from another set, which in our case
+ * is either the set of polynomials of degree <= some bound
+ * or it is the set of polynomials with certain leading bits
+ * and length. */
+
 use super::polys::{self, Degree, Poly};
 
-// Compute irreducibles of degree at most d using a sieve.
+// Compute odd irreducibles of degree at most d using a sieve.
 fn sieve_erat(d: Degree) -> Vec<Poly> {
     let mut irreducibles: Vec<u64> = Vec::new();
     let mut is_irred: Vec<bool> = vec![true; 1 << d];
@@ -18,15 +25,7 @@ fn sieve_erat(d: Degree) -> Vec<Poly> {
     irreducibles
 }
 
-// Convert a polynomial to its corresponding index.
-fn poly_to_idx(d: Degree, k: Degree, g: Poly) -> usize {
-    let mask = (1 << (d + 1 - k)) - 1;
-    ((g & mask) >> 1) as usize
-}
-
-// Compute all irreducibles of degree d starting with f.
-// Take the happy path where 2k <= d.
-// In that case the degree of a sieving prime w
+// Compute the idx-th irreducible of degree d starting with f.
 pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
     let small_irreds = sieve_erat(d / 2);
     let sieve_len = d / 2;
@@ -34,12 +33,12 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
     for i in 0..(1 << (d - k - sieve_len)) {
         let (f, num_irred) = sieve_block(
             d,
-            f + (i << sieve_len + 1),
+            f + (i << (sieve_len + 1)),
             d - sieve_len,
             &small_irreds,
             idx - total_irred,
         );
-        if !f.is_none() {
+        if f.is_some() {
             return f;
         }
         total_irred += num_irred;
@@ -47,10 +46,19 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
     None
 }
 
-// Compute all irreducibles of degree d starting with f.
-// Take the happy path where 2k <= d.
-// In that case the degree of a sieving prime w
-pub fn sieve_block(
+// Convert a polynomial to its corresponding index according to the
+// mapping used by the sieve_block function.
+// g == 1[k - bits][d - k bits]1
+// We are interested in the [d - k bits].
+fn poly_to_idx(d: Degree, k: Degree, g: Poly) -> usize {
+    let mask = (1 << (d + 1 - k)) - 1;
+    ((g & mask) >> 1) as usize
+}
+
+// Compute the idx-th irreducible of degree d starting with f.
+// OR the number of irreducibles of degree d starting with f.
+// Assume 2k <= d.
+fn sieve_block(
     d: Degree,
     f: Poly,
     k: Degree,

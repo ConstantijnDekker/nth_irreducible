@@ -1,3 +1,9 @@
+/* This module combines two algorithms to compute the nth irreducible polynomial.
+ * The first algorithm found in the module count is used to compute the
+ * the first k bits of the polynomial, and then a sieving algorithm is used
+ * to determine the irreducibles with this leading bit-pattern and pick
+ * the right one. */
+
 use super::count;
 use super::polys::{self, Degree, Poly};
 use super::sieve;
@@ -85,15 +91,18 @@ fn nth_irreducible_degree(n: i64) -> Option<Degree> {
     Some(d)
 }
 
-// Compute the remainder modulo x^k, of the idx-th polynomial of degree deg.
+// Compute the remainder modulo X^k, of the idx-th polynomial of degree deg.
+// when the polynomials are ordered in bit-reverse order (so 101 < 011)
+// together with the subindex of this polynomial.
 fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
     let rem_to_irred = count::count_irreds_with_remainder(deg, k);
-    // It does not hurt to check this
+    // It is cheap to check for this error
     assert_eq!(rem_to_irred.iter().sum::<i64>(), IRRED_OF_DEG[deg as usize]);
-    let mut num_irred = 0;
-    // Iterate in bit reverse order, because this
+
+    // Iterate in bit reverse orderbecause this
     // resembles how the remainders are ordered when they are rotated and
     // on the start (leading).
+    let mut num_irred = 0;
     for rev_rem in (1 << (k - 1))..(1 << k) {
         let rem = polys::reverse(rev_rem, k);
         let extra = rem_to_irred[(rem >> 1) as usize];
@@ -105,21 +114,27 @@ fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
     panic!("Could not find remainder!");
 }
 
-// Insert special case if n == 0
+// Compute nth irreducible polynomial.
 pub fn nth_irreducible(n: i64) -> Poly {
     let deg = nth_irreducible_degree(n).expect("Degree of result is too high");
     if deg <= 2 {
         return [0b10, 0b11, 0b111][n as usize];
     }
-    let num_irred = (1..deg).map(|d| IRRED_OF_DEG[d as usize]).sum::<i64>();
-    let idx = n - num_irred;
+    let idx = n - (1..deg).map(|d| IRRED_OF_DEG[d as usize]).sum::<i64>();
+
+    // Number of bits we determine by dynamic programming, about deg/3 is
+    // best theoretically (and also practically).
     let k = std::cmp::max(2, (deg + 2) / 3);
-    let now = std::time::Instant::now();
+
+    //let now = std::time::Instant::now();
+
     let (f, idx) = get_remainder(deg, idx, k);
-    let t1 = now.elapsed().as_micros();
+    //let t1 = now.elapsed().as_micros();
+
     let irred = sieve::get_irreds(deg, polys::reverse(f, k) << (deg + 1 - k), k, idx);
-    let t2 = now.elapsed().as_micros();
-    dbg!(t1, t2 - t1);
+    //let t2 = now.elapsed().as_micros();
+
+    //dbg!(t1, t2 - t1); // Two numbers should be similar if k was chosen well.
     irred.unwrap()
 }
 

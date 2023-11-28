@@ -1,3 +1,5 @@
+// This module contains types and functions for working with binary polynomials
+// that are used throughout the program.
 pub type Poly = u64;
 pub type Degree = i64;
 
@@ -32,6 +34,7 @@ pub fn degree(f: Poly) -> Degree {
     (63 - f.leading_zeros()) as Degree
 }
 
+/* Reverse last k bits of a polynomial (and zero out others). */
 pub fn reverse(f: Poly, k: Degree) -> Poly {
     f.reverse_bits() >> (64 - k)
 }
