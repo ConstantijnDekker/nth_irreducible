@@ -70,14 +70,19 @@ const IRRED_OF_DEG: [i64; 64] = [
     146402730743693304,
 ];
 // Compute the degree of the nth irreducible polynomial
-fn nth_irreducible_degree(n: i64) -> Degree {
+fn nth_irreducible_degree(n: i64) -> Option<Degree> {
+    // Result has degree at least 64, we cannot do anything with that.
+    if n >= IRRED_OF_DEG.iter().sum::<i64>() {
+        return None;
+    }
     let mut d = 0;
     let mut num_irred = 0;
     while num_irred <= n {
         d += 1;
         num_irred += IRRED_OF_DEG[d as usize]
     }
-    d
+
+    Some(d)
 }
 
 // Compute the remainder modulo x^k, of the idx-th polynomial of degree deg.
@@ -102,7 +107,7 @@ fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
 
 // Insert special case if n == 0
 pub fn nth_irreducible(n: i64) -> Poly {
-    let deg = nth_irreducible_degree(n);
+    let deg = nth_irreducible_degree(n).expect("Degree of result is too high");
     if deg <= 2 {
         return [0b10, 0b11, 0b111][n as usize];
     }
@@ -141,5 +146,11 @@ mod tests {
     #[test]
     fn test_nth_irreducible22() {
         assert_eq!(nth_irreducible(22), 117);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_too_high() {
+        nth_irreducible(297691289425574350);
     }
 }
