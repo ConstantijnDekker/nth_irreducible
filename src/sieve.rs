@@ -25,15 +25,18 @@ fn sieve_erat(d: Degree) -> Vec<Poly> {
     irreducibles
 }
 
-// Compute the idx-th irreducible of degree d starting with f.
+// Compute the idx-th irreducible of degree d starting with first k bits equal to f.
+// parition the number up like this
+// [f (k bits)][blck_idx] (d - k - d/2) bits][d/2 bits]1
+// And for each [f][blck_idx], call sieve_block.
 pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
     let small_irreds = sieve_erat(d / 2);
     let sieve_len = d / 2;
     let mut total_irred = 0;
-    for i in 0..(1 << (d - k - sieve_len)) {
+    for blck_idx in 0..(1 << (d - k - sieve_len)) {
         let (f, num_irred) = sieve_block(
             d,
-            f + (i << (sieve_len + 1)),
+            f + (blck_idx << (sieve_len + 1)),
             d - sieve_len,
             &small_irreds,
             idx - total_irred,
@@ -57,7 +60,14 @@ fn poly_to_idx(d: Degree, k: Degree, g: Poly) -> usize {
 
 // Compute the idx-th irreducible of degree d starting with f.
 // OR the number of irreducibles of degree d starting with f.
-// Assume 2k <= d.
+//
+// Assume k <= (d + 1) / 2 (floored).
+// Highest degree of an irreducible is d/2 (floored)
+// If d is odd, then d / 2 (floored) = (d - 1) / 2 and
+// (d + 1) / 2 = d - (d - 1) / 2 >= k.
+// If d is even, (d / 2) floored == d / 2.
+// Then d - d / 2 == d / 2 == (d + 1) / 2 (floored) >= k.
+// This shows every irreducible has at least one multiple occuring in the block.
 fn sieve_block(
     d: Degree,
     f: Poly,
@@ -85,4 +95,13 @@ fn sieve_block(
         }
     }
     (None, num_irred)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_sieve_erat() {
+        assert_eq!(sieve_erat(3), vec![0b11, 0b111, 0b1011, 0b1101]);
+    }
 }
