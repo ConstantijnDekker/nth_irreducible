@@ -131,7 +131,7 @@ pub fn nth_irreducible(n: i64) -> Poly {
     let (f, idx) = get_remainder(deg, idx, k);
     //let t1 = now.elapsed().as_micros();
 
-    let irred = sieve::get_irreds(deg, polys::reverse(f, k) << (deg + 1 - k), k, idx);
+    let irred = sieve::find_irreducible(polys::reverse(f, k) << (deg + 1 - k), k, idx);
     //let t2 = now.elapsed().as_micros();
 
     //dbg!(t1, t2 - t1); // Two numbers should be similar if k was chosen well.
@@ -158,9 +158,15 @@ mod tests {
         assert_eq!(nth_irreducible(100), 0b1100010011);
     }
 
+    // Previous problem case because it is high up within its degree
     #[test]
     fn test_nth_irreducible22() {
         assert_eq!(nth_irreducible(22), 117);
+    }
+
+    #[test]
+    fn test_nth_pe() {
+        assert_eq!(nth_irreducible(4_999_999), 124136381); 
     }
 
     #[test]

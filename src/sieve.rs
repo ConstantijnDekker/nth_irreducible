@@ -28,21 +28,21 @@ fn sieve_erat(d: Degree) -> Vec<Poly> {
 // Compute the idx-th irreducible of degree d starting with first k bits equal to f.
 // parition the number up like this
 // [f (k bits)][blck_idx] (d - k - d/2) bits][d/2 bits]1
-// And for each [f][blck_idx], call sieve_block.
-pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
+// And for each [f][blck_idx], call find_with_sieve.
+pub fn find_irreducible(f: Poly, k: Degree, idx: i64) -> Option<Poly> {
+    let d = polys::degree(f);
     let small_irreds = sieve_erat(d / 2);
     let sieve_len = d / 2;
     let mut total_irred = 0;
     for blck_idx in 0..(1 << (d - k - sieve_len)) {
-        let (f, num_irred) = sieve_block(
-            d,
+        let (g, num_irred) = find_with_sieve(
             f + (blck_idx << (sieve_len + 1)),
             d - sieve_len,
             &small_irreds,
             idx - total_irred,
         );
-        if f.is_some() {
-            return f;
+        if g.is_some() {
+            return g;
         }
         total_irred += num_irred;
     }
@@ -50,7 +50,7 @@ pub fn get_irreds(d: Degree, f: Poly, k: Degree, idx: i64) -> Option<Poly> {
 }
 
 // Convert a polynomial to its corresponding index according to the
-// mapping used by the sieve_block function.
+// mapping used by the find_with_sieve function.
 // g == 1[k - bits][d - k bits]1
 // We are interested in the [d - k bits].
 fn poly_to_idx(d: Degree, k: Degree, g: Poly) -> usize {
@@ -68,13 +68,13 @@ fn poly_to_idx(d: Degree, k: Degree, g: Poly) -> usize {
 // If d is even, (d / 2) floored == d / 2.
 // Then d - d / 2 == d / 2 == (d + 1) / 2 (floored) >= k.
 // This shows every irreducible has at least one multiple occuring in the block.
-fn sieve_block(
-    d: Degree,
+fn find_with_sieve(
     f: Poly,
     k: Degree,
     small_irreds: &[Poly],
     idx: i64,
 ) -> (Option<Poly>, i64) {
+    let d = polys::degree(f);
     let mut is_irred: Vec<bool> = vec![true; 1 << (d - k)];
 
     for &g in small_irreds {
@@ -103,5 +103,22 @@ mod test {
     #[test]
     fn test_sieve_erat() {
         assert_eq!(sieve_erat(3), vec![0b11, 0b111, 0b1011, 0b1101]);
+    }
+
+    #[test]
+    fn test_find_irreducible() {
+        assert_eq!(find_irreducible(0b1100000, 2, 1), Some(0b1100111));
+    }
+
+    #[test]
+    fn test_find_with_sieve_success() {
+        let small_irreds = sieve_erat(3);
+        assert_eq!(find_with_sieve(0b1110000, 3, &small_irreds, 1), (Some(0b1110101), 2));
+    }
+
+    #[test]
+    fn test_find_with_sieve_failure() {
+        let small_irreds = sieve_erat(3);
+        assert_eq!(find_with_sieve(0b1110000, 3, &small_irreds, 2), (None, 2));
     }
 }
