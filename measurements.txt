@@ -16,3 +16,9 @@ correct:
 irreducible number 10 * 10^12:
 467463304796069
 x^48 + x^47 + x^45 + x^43 + x^40 + x^37 + x^34 + x^33 + x^32 + x^31 + x^30 + x^27 + x^21 + x^20 + x^19 + x^17 + x^14 + x^12 + x^10 + x^9 + x^8 + x^7 + x^5 + x^2 + 1
+
+
+10^13 ( - 1)
+nth-irreducible (string): x^52 + x^48 + x^47 + x^46 + x^44 + x^40 + x^39 + x^38 + x^37 + x^33 + x^32 + x^31 + x^30 + x^27 + x^25 + x^23 + x^22 + x^21 + x^19 + x^18 + x^17 + x^15 + x^14 + x^13 + x^12 + x^11 + x^8 + x^7 + x^6 + x^3 + 1.
+nth-irreducible (numeric): 5015850896521673
+Computation time: 495.14087 seconds
