@@ -7,17 +7,21 @@
 
 use super::polys::{self, Degree, Poly};
 
+// Amount of bits necessary to specify a bit in a 64-bit integer.
+const WORD_LEN: i64 = 6;
+
 // Compute odd irreducibles of degree at most d using a sieve.
 fn sieve_erat(d: Degree) -> Vec<Poly> {
     let mut irreducibles: Vec<u64> = Vec::new();
-    let mut is_irred: Vec<bool> = vec![true; 1 << d];
+    let mut is_irred: Vec<u64> = vec![0; 1 << std::cmp::max(d - WORD_LEN, 0)];
 
     for g in (3..(1 << (d + 1))).step_by(2) {
-        if is_irred[(g >> 1) as usize] {
+        if is_zero_bit((g >> 1) as usize, &is_irred) {
             irreducibles.push(g);
             let r = polys::degree(g);
             for h in (1..(1 << (d + 1 - r))).step_by(2) {
-                is_irred[(polys::xor_mult(h, g) >> 1) as usize] = false;
+                let multiple = polys::xor_mult(h, g);
+                set_bit((multiple >> 1) as usize, &mut is_irred);
             }
         }
     }
@@ -54,8 +58,21 @@ pub fn find_irreducible(f: Poly, k: Degree, idx: i64) -> Option<Poly> {
 // g == 1[k - bits][d - k bits]1
 // We are interested in the [d - k bits].
 fn poly_to_idx(d: Degree, k: Degree, g: Poly) -> usize {
-    let mask = (1 << (d + 1 - k)) - 1;
-    ((g & mask) >> 1) as usize
+    (polys::mod_red(g, d + 1 - k) >> 1) as usize
+}
+
+fn split_idx(bit_idx: usize) -> (usize, usize) {
+    (bit_idx >> WORD_LEN, bit_idx & ((1 << WORD_LEN) - 1))
+}
+
+fn set_bit(bit_idx: usize, is_irred: &mut [u64]) {
+    let (idx, bit_offset) = split_idx(bit_idx);
+    is_irred[idx] |= 1 << bit_offset;
+}
+
+fn is_zero_bit(bit_idx: usize, is_irred: &[u64]) -> bool {
+    let (idx, bit_offset) = split_idx(bit_idx);
+    is_irred[idx] & (1 << bit_offset) == 0
 }
 
 // Compute the idx-th irreducible of degree d starting with f.
@@ -75,19 +92,21 @@ fn find_with_sieve(
     idx: i64,
 ) -> (Option<Poly>, i64) {
     let d = polys::degree(f);
-    let mut is_irred: Vec<bool> = vec![true; 1 << (d - k)];
+    let mut is_irred: Vec<u64> = vec![0; 1 << std::cmp::max(0, d - k - WORD_LEN)];
 
     for &g in small_irreds {
         let r = d - polys::degree(g); // we must have r >= k.
         let h = polys::comp_multiplier(f, g, k);
         for i in 0..(1 << (r - k)) {
-            is_irred[poly_to_idx(d, k, polys::xor_mult(h + (i << 1), g))] = false;
+            let multiple = polys::xor_mult(h + (i << 1), g);
+            let bit_idx = poly_to_idx(d, k, multiple);
+            set_bit(bit_idx, &mut is_irred);
         }
     }
 
     let mut num_irred = 0;
     for i in 0u64..(1 << (d - k)) {
-        if is_irred[i as usize] {
+        if is_zero_bit(i as usize, &is_irred) {
             num_irred += 1;
             if num_irred == idx + 1 {
                 return (Some(f + (i << 1) + 1), num_irred);
@@ -100,6 +119,12 @@ fn find_with_sieve(
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_split_idx() {
+        assert_eq!(split_idx(0b1111001), (0b1, 0b111001));
+    }
+
     #[test]
     fn test_sieve_erat() {
         assert_eq!(sieve_erat(3), vec![0b11, 0b111, 0b1011, 0b1101]);

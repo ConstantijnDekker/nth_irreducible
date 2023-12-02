@@ -39,6 +39,11 @@ pub fn reverse(f: Poly, k: Degree) -> Poly {
     f.reverse_bits() >> (64 - k)
 }
 
+// Reduce f modulo X^k (return trailing k bits of f).
+pub fn mod_red(f: Poly, k: Degree) -> Poly {
+    f & ((1 << k) - 1)
+}
+
 // Xor multiply with native assembly instruction.
 pub fn xor_mult(a: Poly, b: Poly) -> Poly {
     let mut a = a;
@@ -109,6 +114,11 @@ mod test {
     #[test]
     fn test_reverse_zeroing() {
         assert_eq!(reverse(0b1101, 2), 0b0010);
+    }
+
+    #[test]
+    fn test_mod_red() {
+        assert_eq!(mod_red(0b1101, 3), 0b101);
     }
 
     #[test]

@@ -42,25 +42,25 @@ pub fn count_irreds_with_remainder(deg: Degree, k: Degree) -> Vec<i64> {
     // For irreducibles of larger degree, the only
     // multiples to remove are twin primes.
     for d in (deg / 3 + 1)..=(deg / 2) {
-        remove_twins(&mut leftovers, d, deg - d, k);
+        remove_semis(&mut leftovers, d, deg - d, k);
     }
 
     leftovers[deg as usize].clone()
 }
 
-// Remove twin primes that are the product of degree a and degree b irreducible.
+// Remove semi-irreducibles that are the product of degree a and degree b irreducible.
 // Assume leftovers[a] and leftovers[b] contains the irreducible counts.
-fn remove_twins(leftovers: &mut [Vec<i64>], a: Degree, b: Degree, k: Degree) {
+fn remove_semis(leftovers: &mut [Vec<i64>], a: Degree, b: Degree, k: Degree) {
     // If a and b are the same, the calculation is more complicated.
     if a == b {
         for g in (1..(1 << k)).step_by(2) {
-            let prod_rem = polys::xor_mult(g, g) & ((1 << k) - 1);
+            let prod_rem = polys::mod_red(polys::xor_mult(g, g), k);
             let num_twins = (leftovers[a as usize][(g >> 1) as usize]
                 * (leftovers[a as usize][(g >> 1) as usize] + 1))
                 / 2;
             leftovers[(a + b) as usize][(prod_rem >> 1) as usize] -= num_twins;
             for h in ((g + 2)..(1 << k)).step_by(2) {
-                let prod_rem = polys::xor_mult(g, h) & ((1 << k) - 1);
+                let prod_rem = polys::mod_red(polys::xor_mult(g, h), k);
                 let num_twins = leftovers[a as usize][(g >> 1) as usize]
                     * leftovers[b as usize][(h >> 1) as usize];
                 leftovers[(a + b) as usize][(prod_rem >> 1) as usize] -= num_twins;
@@ -69,7 +69,7 @@ fn remove_twins(leftovers: &mut [Vec<i64>], a: Degree, b: Degree, k: Degree) {
     } else {
         for g in (1..(1 << k)).step_by(2) {
             for h in (1..(1 << k)).step_by(2) {
-                let prod_rem = polys::xor_mult(g, h) & ((1 << k) - 1);
+                let prod_rem = polys::mod_red(polys::xor_mult(g, h), k);
                 let num_twins = leftovers[a as usize][(g >> 1) as usize]
                     * leftovers[b as usize][(h >> 1) as usize];
                 leftovers[(a + b) as usize][(prod_rem >> 1) as usize] -= num_twins;
@@ -83,7 +83,7 @@ fn remove_twins(leftovers: &mut [Vec<i64>], a: Degree, b: Degree, k: Degree) {
 // where g is a polynomial that is not a multiple of any of the previous polynomials.
 fn mark_multiples_of_deg(leftovers: &mut [Vec<i64>], d: Degree, r: Degree, f: Poly, k: Degree) {
     for g in (1..(1 << k)).step_by(2) {
-        let h = polys::xor_mult(g, f) & ((1 << k) - 1); // last k bits of g times f
+        let h = polys::mod_red(polys::xor_mult(g, f), k); // last k bits of g times f
         leftovers[(d + r) as usize][(h >> 1) as usize] -= leftovers[d as usize][(g >> 1) as usize];
     }
 }
