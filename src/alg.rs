@@ -5,7 +5,7 @@
  * the right one. */
 
 use super::count;
-use super::polys::{self, Degree, Poly};
+use super::polys::{self, Degree, Poly64};
 use super::sieve;
 
 // Number of irreducibles of each degree. These are not hard to compute, but this is a well-known sequence.
@@ -94,7 +94,7 @@ fn nth_irreducible_degree(n: i64) -> Option<Degree> {
 // Compute the remainder modulo X^k, of the idx-th polynomial of degree deg.
 // when the polynomials are ordered in bit-reverse order (so 101 < 011)
 // together with the subindex of this polynomial.
-fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
+fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly64, i64) {
     let rem_to_irred = count::count_irreds_with_remainder(deg, k);
     // It is cheap to check for this error
     assert_eq!(rem_to_irred.iter().sum::<i64>(), IRRED_OF_DEG[deg as usize]);
@@ -107,8 +107,8 @@ fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
         let rem = polys::reverse(rev_rem, k);
         let extra = rem_to_irred[(rem >> 1) as usize];
         if num_irred + extra > idx {
-            //return (rem as Poly, idx - num_irred);
-            return (rem as Poly, extra - 1);
+            //return (rem as Poly64, idx - num_irred);
+            return (rem as Poly64, extra - 1);
         }
         num_irred += extra; // num_irred <= idx
     }
@@ -116,7 +116,7 @@ fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
 }
 
 // Compute nth irreducible polynomial.
-pub fn nth_irreducible(n: i64) -> Poly {
+pub fn nth_irreducible(n: i64) -> Poly64 {
     let deg = nth_irreducible_degree(n).expect("Degree of result is too high");
     if deg <= 2 {
         return [0b10, 0b11, 0b111][n as usize];

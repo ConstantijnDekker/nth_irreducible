@@ -5,21 +5,21 @@
  * or it is the set of polynomials with certain leading bits
  * and length. */
 
-use super::polys::{self, Degree, Poly};
+use super::polys::{self, Degree, Poly64, Poly32};
 
 // Amount of bits necessary to specify a bit in a 64-bit integer.
 const WORD_LEN: i64 = 6;
 
 // Compute odd irreducibles of degree at most d using a sieve.
-fn sieve_erat(d: Degree) -> Vec<Poly> {
-    let mut irreducibles: Vec<u64> = Vec::new();
+fn sieve_erat(d: Degree) -> Vec<Poly32> {
+    let mut irreducibles: Vec<Poly32> = Vec::new();
     let mut is_irred: Vec<u64> = vec![0; 1 << std::cmp::max(d - WORD_LEN, 0)];
 
-    for g in (3..(1 << (d + 1))).step_by(2) {
+    for g in (3u64..(1 << (d + 1))).step_by(2) {
         if is_zero_bit((g >> 1) as usize, &is_irred) {
-            irreducibles.push(g);
+            irreducibles.push(g as Poly32);
             let r = polys::degree(g);
-            for h in (1..(1 << (d + 1 - r))).step_by(2) {
+            for h in (1u64..(1 << (d + 1 - r))).step_by(2) {
                 let multiple = polys::xor_mult(h, g);
                 set_bit((multiple >> 1) as usize, &mut is_irred);
             }
@@ -33,9 +33,9 @@ fn sieve_erat(d: Degree) -> Vec<Poly> {
 // parition the number up like this
 // [f (k bits)][blck_idx] (d - k - d/2) bits][d/2 bits]1
 // And for each [f][blck_idx], call find_with_sieve.
-pub fn find_irreducible(f: Poly, k: Degree, idx: i64) -> Option<Poly> {
+pub fn find_irreducible(f: Poly64, k: Degree, idx: i64) -> Option<Poly64> {
     let d = polys::degree(f);
-    let small_irreds = sieve_erat(d / 2);
+    let small_irreds: Vec<Poly32> = sieve_erat(d / 2);
     let sieve_len = d / 2;
     let mut total_irred = 0;
     for blck_idx in 0..(1 << (d - k - sieve_len)) {
@@ -57,7 +57,7 @@ pub fn find_irreducible(f: Poly, k: Degree, idx: i64) -> Option<Poly> {
 // mapping used by the find_with_sieve function.
 // g == 1[k - bits][d - k bits]1
 // We are interested in the [d - k bits].
-fn poly_to_idx(d: Degree, k: Degree, g: Poly) -> usize {
+fn poly_to_idx(d: Degree, k: Degree, g: Poly64) -> usize {
     (polys::mod_red(g, d + 1 - k) >> 1) as usize
 }
 
@@ -86,15 +86,16 @@ fn is_zero_bit(bit_idx: usize, is_irred: &[u64]) -> bool {
 // Then d - d / 2 == d / 2 == (d + 1) / 2 (floored) >= k.
 // This shows every irreducible has at least one multiple occuring in the block.
 fn find_with_sieve(
-    f: Poly,
+    f: Poly64,
     k: Degree,
-    small_irreds: &[Poly],
+    small_irreds: &[Poly32],
     idx: i64,
-) -> (Option<Poly>, i64) {
+) -> (Option<Poly64>, i64) {
     let d = polys::degree(f);
     let mut is_irred: Vec<u64> = vec![0; 1 << std::cmp::max(0, d - k - WORD_LEN)];
 
     for &g in small_irreds {
+        let g = g as Poly64;
         let r = d - polys::degree(g); // we must have r >= k.
         let h = polys::comp_multiplier(f, g, k);
         for i in 0..(1 << (r - k)) {

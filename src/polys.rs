@@ -1,10 +1,11 @@
 // This module contains types and functions for working with binary polynomials
 // that are used throughout the program.
-pub type Poly = u64;
+pub type Poly64 = u64;
+pub type Poly32 = u32;
 pub type Degree = i64;
 
 /* Convert polynomial to string. */
-pub fn poly_to_string(f: Poly) -> String {
+pub fn poly_to_string(f: Poly64) -> String {
     if f == 0 {
         return "0".to_string();
     }
@@ -30,22 +31,22 @@ pub fn poly_to_string(f: Poly) -> String {
 }
 
 // Find the degree of a polynomial.
-pub fn degree(f: Poly) -> Degree {
+pub fn degree(f: Poly64) -> Degree {
     (63 - f.leading_zeros()) as Degree
 }
 
 // Reverse last k bits of a polynomial (and zero out others).
-pub fn reverse(f: Poly, k: Degree) -> Poly {
+pub fn reverse(f: Poly64, k: Degree) -> Poly64 {
     f.reverse_bits() >> (64 - k)
 }
 
 // Reduce f modulo X^k (return trailing k bits of f).
-pub fn mod_red(f: Poly, k: Degree) -> Poly {
+pub fn mod_red(f: Poly64, k: Degree) -> Poly64 {
     f & ((1 << k) - 1)
 }
 
 // Xor multiply with native assembly instruction.
-pub fn xor_mult(a: Poly, b: Poly) -> Poly {
+pub fn xor_mult(a: Poly64, b: Poly64) -> Poly64 {
     let mut a = a;
     unsafe {
         std::arch::asm!("pclmullqlqdq {xmm1}, {xmm2}",
@@ -58,7 +59,7 @@ pub fn xor_mult(a: Poly, b: Poly) -> Poly {
 
 // Compute odd h such that xor_mult(g, h) is odd and has
 // the leading k bits equal to f.
-pub fn comp_multiplier(f: Poly, g: Poly, k: Degree) -> Poly {
+pub fn comp_multiplier(f: Poly64, g: Poly64, k: Degree) -> Poly64 {
     let d = degree(f);
     let r = d - degree(g); // assume r >= k
     let mut res = f ^ g;
@@ -78,23 +79,23 @@ mod test {
 
     #[test]
     fn test_poly_to_string_zero() {
-        let f: Poly = 0;
+        let f: Poly64 = 0;
         assert_eq!(poly_to_string(f), "0");
     }
     #[test]
     fn test_poly_to_string_zeroth_pow() {
-        let f: Poly = 0b1001;
+        let f: Poly64 = 0b1001;
         assert_eq!(poly_to_string(f), "x^3 + 1");
     }
     #[test]
     fn test_poly_to_string_first_pow() {
-        let f: Poly = 0b10010;
+        let f: Poly64 = 0b10010;
         assert_eq!(poly_to_string(f), "x^4 + x");
     }
 
     #[test]
     fn test_degree() {
-        let f: Poly = 0b1001;
+        let f: Poly64 = 0b1001;
         assert_eq!(degree(f), 3);
     }
     #[test]

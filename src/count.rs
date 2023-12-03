@@ -1,6 +1,6 @@
 /* This module counts the number of irreducibles
  * with a certain (odd) remainder using dynamic programming. */
-use super::polys::{self, Degree, Poly};
+use super::polys::{self, Degree, Poly64};
 
 // Initialise leftovers, where leftovers[d][g >> 1] is the number of polynomials
 // of degree d with remainder g modulo X^k (assuming g == 1 mod X).
@@ -81,7 +81,7 @@ fn remove_semis(leftovers: &mut [Vec<i64>], a: Degree, b: Degree, k: Degree) {
 // Subtract the multiples of the form
 // g * (an irreducible with degree r congruent to f modulo X^k)
 // where g is a polynomial that is not a multiple of any of the previous polynomials.
-fn mark_multiples_of_deg(leftovers: &mut [Vec<i64>], d: Degree, r: Degree, f: Poly, k: Degree) {
+fn mark_multiples_of_deg(leftovers: &mut [Vec<i64>], d: Degree, r: Degree, f: Poly64, k: Degree) {
     for g in (1..(1 << k)).step_by(2) {
         let h = polys::mod_red(polys::xor_mult(g, f), k); // last k bits of g times f
         leftovers[(d + r) as usize][(h >> 1) as usize] -= leftovers[d as usize][(g >> 1) as usize];
@@ -90,7 +90,7 @@ fn mark_multiples_of_deg(leftovers: &mut [Vec<i64>], d: Degree, r: Degree, f: Po
 
 // Remove multiples of irreducible of degree r congruent to f modulo X^k
 // Here 'remove' means subtract from the total.
-fn remove_multiples(leftovers: &mut [Vec<i64>], r: Degree, f: Poly, k: Degree) {
+fn remove_multiples(leftovers: &mut [Vec<i64>], r: Degree, f: Poly64, k: Degree) {
     let deg = leftovers.len() as i64 - 1;
     mark_multiples_of_deg(leftovers, deg - r, r, f, k);
     // We don't have to do all degrees because the values they
