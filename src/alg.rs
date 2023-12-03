@@ -107,7 +107,8 @@ fn get_remainder(deg: Degree, idx: i64, k: Degree) -> (Poly, i64) {
         let rem = polys::reverse(rev_rem, k);
         let extra = rem_to_irred[(rem >> 1) as usize];
         if num_irred + extra > idx {
-            return (rem as Poly, idx - num_irred);
+            //return (rem as Poly, idx - num_irred);
+            return (rem as Poly, extra - 1);
         }
         num_irred += extra; // num_irred <= idx
     }
@@ -125,16 +126,17 @@ pub fn nth_irreducible(n: i64) -> Poly {
     // Number of bits we determine by dynamic programming, about deg/3 is
     // best theoretically (and also practically).
     let k = std::cmp::max(2, (deg + 2) / 3);
-
-    //let now = std::time::Instant::now();
+    let now = std::time::Instant::now();
 
     let (f, idx) = get_remainder(deg, idx, k);
-    //let t1 = now.elapsed().as_micros();
+
+    let t1 = now.elapsed().as_micros();
 
     let irred = sieve::find_irreducible(polys::reverse(f, k) << (deg + 1 - k), k, idx);
-    //let t2 = now.elapsed().as_micros();
+    let t2 = now.elapsed().as_micros();
+    println!("Elimination time: {} seconds", t1 as f64 / 1_000_000.);
+    println!("Sieving time: {} seconds", (t2 - t1) as f64 / 1_000_000.);
 
-    //dbg!(t1, t2 - t1); // Two numbers should be similar if k was chosen well.
     irred.unwrap()
 }
 
