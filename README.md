@@ -22,7 +22,7 @@ The algorithm I designed consists of two parts.
 1. In the first part, we compute the degree of the nth irreducible polynomial AND a fixed number k of its leading (most significant) bits. The algorithm for this is based on dynamic programming.
 2. In the second part, we compute irreducibles in the search space specified by the obtained information in the first part until we have found the answer.
 
-The time complexity is about O(2^(2D/3)) where D is the degree of the answer (disregarding some smaller log factors). The source code contains further explanations, but I have also written more about the algorithm in a post on project euler.
+The time complexity is about O(2^(2D/3)) where D is the degree of the answer (disregarding some smaller log factors). The source code contains further explanations, but I have also written more about the algorithm in a post on the project euler thread to problem 810 (which I also commited to this repo)
 
 The program is written in rust and runs with a single thread. With the correct version of rust installed (written in 1.73.0), it can be run and tested by the appropriate cargo commands.
 
