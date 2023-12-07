@@ -1,19 +1,10 @@
-irreducible number 5 * 10^6:
-124069407
-correct:
-124136381
-
-irreducible number 5 * 10^9:
-176875308353
-correct:
+irreducible number 5 * 10^9 - 1
 176884982797
 
-irreducible number 5 * 10^12:
-228587642928581
-correct:
+irreducible number 5 * 10^12 -1
 228588532244961
 
-irreducible number 10 * 10^12:
+irreducible number 10 * 10^12 -1
 467463304796069
 x^48 + x^47 + x^45 + x^43 + x^40 + x^37 + x^34 + x^33 + x^32 + x^31 + x^30 + x^27 + x^21 + x^20 + x^19 + x^17 + x^14 + x^12 + x^10 + x^9 + x^8 + x^7 + x^5 + x^2 + 1
 
