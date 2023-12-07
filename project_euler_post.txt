@@ -1,0 +1,233 @@
+[collapse=stimmer][userid=214486] said
+[quote]I'd initially misread the target as $5\,000\,000\,000$ for which the answer would be over $10^{11}$ and sieving would be impractical. I'd imagined the solution would require an XOR-prime version of the prime-pi algorithm, but I couldn't get one to run fast (though it feels like it should be possible). The following method is a hybrid approach where we calculate xor-prime-pi close to the target and sieve the rest of the way.
+
+Converting Legendre's formula for prime-pi to count XOR-primes gives us this:
+
+
+[center]$\rlap{\bigcirc}{\,\pi}\,(N) =  S(N,1) - \sum_{i}S(N,p_i) + \sum_{i<j} S(N,p_i\otimes p_j) - \sum_{i<j<k}S(N,p_i\otimes p_j\otimes p_k) + \cdots + \rlap{\bigcirc}{\,\pi}\,(R-1) - 1$[/center]
+
+where $S(N,a) = \bigm|\left \{ b\ |\ a\otimes b \leqslant N,b>0\right \}\bigm|$, $R$ is the lowest power of 2 with $R\otimes R > N$, and all $p_i < R$
+
+The trick is to only keep the most significant digits after XOR-multiplication. Define $A_n$ to be the n most significant bits of A. Then we have $(A \otimes B)_n = (A_n \otimes B_n)_n$ . Think of this as being like floating-point arithmetic, except that because there is no carry there is no error and the equality is exact. The algorithm works by setting the precision to be about a quarter of the final result (eg for $5\,000\,000\,000$ the answer has 38 bits so I keep 9 bits). Then we can quickly calculate $\rlap{\bigcirc}{\,\pi}\,(N)$ at the binary values of the form $1xx...xx000000.....000000$, stopping when we exceed the target. 
+
+Reducing the precision keeps the DP space down to $\mathcal{O}(N^{\frac{1}{4}})$ and there are around $\mathcal{O}(N^{\frac{1}{2}})$ XOR-primes below $R$, so this step should take $\mathcal{O}(N^{\frac{3}{4}})$ (it is actually a little worse as I am ignoring $\log{N}$ factors here, and $N$ is the final answer rather than the initial target). This gives us a range where the exact answer lies which has a size of approximately $N^{\frac{3}{4}}$ which takes a comparable time to sieve.
+
+This method gives the $5\,000\,000\,000$[sup]th[/sup] XOR-prime as [hide]176884982797[/hide] in 1.9 seconds. Checking the result with a naive sieve took 52 minutes. For the original question my code finds the $5\,000\,000$[sup]th[/sup] XOR-prime in [b]5.5 milliseconds[/b]. (All times are on a single thread)
+
+I claim the $5\,000\,000\,000\,000$[sup]th[/sup] XOR-prime is [hide]228588532244961[/hide] which took just over 6 minutes (although during development the code claimed a few other values as the $5\,000\,000\,000\,000$[sup]th[/sup] XOR-prime too, and without being able to cross check with a sieve it is difficult to be sure.)
+
+[code=C++]//g++ -Ofast -msse4.1 -mpclmul -std=c++17 xppi.cpp
+
+#include <iostream>
+#include <stdio.h>
+#include <inttypes.h>
+#include <immintrin.h>
+#include <vector>
+#include <algorithm>
+#include <map>
+using namespace std;
+
+typedef uint64_t u64;
+typedef int64_t s64;
+
+inline s64 D(u64 a){ // 'degree' of a when expressed as a poly over GF2[x]
+                     // = position of highest bit set in a
+                     // = floor(log2(a)) (note a==0 is a special case)
+    return a?63-__builtin_clzll(a):-1;
+}
+
+inline u64 X(u64 a, u64 b){          // XOR-multiply
+    __m128i A = _mm_cvtsi64_si128(a);
+    __m128i B = _mm_cvtsi64_si128(b);
+    __m128i C = __builtin_ia32_pclmulqdq128(A, B, 0);
+    return _mm_extract_epi64(C, 0);
+}
+
+inline u64 R(u64 n,u64 a){  // the remainder when n is xor-divided by a
+                            // if R(n,a)==r then there exists d such that
+                            // X(a,d)^r==N with D(r)<D(a)
+    s64 p=D(n),q=D(a);
+    s64 i=p-q;
+
+    while (i>=0){
+        if (n>=1LL<<(i+q)) n^=(a<<i);
+        i-=1;
+    }
+    return n;
+}
+
+inline u64 S(u64 n,u64 a){ // count of b 1<=b<=n with X(a,b)<=n
+    u64 z=n>>(D(a));
+    if ((n^R(n,a))>n) z-=1;
+    return z;
+}
+
+s64 mu(s64 n){// moebius, doesn't need to be fast here
+    s64 r=(n==1)?1:0;
+    for(s64 k=1;k<n;k++)if(n%k==0)r-=mu(k);
+    return r;
+}
+
+s64 findxprime(s64 T){
+    s64 pp=0,m;
+    for (m=1;;m++){  // calculate OEIS A014580
+        s64 a=0;
+        for (s64 d=1;d<=m;d++)if(m%d==0)a+=mu(d)*(1LL<<(m/d));
+        if (pp+a/m>=T) break;
+        pp+=a/m;
+    }
+
+    //at this point, pp==xor_prime_pi(1<<m) < T <= xor_prime_pi(1<<(m+1))
+
+    s64 h=(m+2)/2;       // max degree of xprimes needed for sieve
+    vector<bool> v(1LL<<h);   // sieve xprimes below 1<<h
+    vector<s64> pr;
+    for(s64 x=2;x<(1LL<<h);x++)if(!v[x]){
+        for(s64 y=2;y<(1LL<<(h-D(x)));y++)v[X(x,y)]=1;
+        pr.push_back(x);
+    }
+    reverse(pr.begin(),pr.end());
+
+    s64 k=(m+1)/4;          // MSBs to keep.
+    map<s64,s64> d;
+    d[1]=1;
+    for(s64 p:pr){
+        auto e=d;
+        for(auto [q,t]:e){
+            if (D(p)+D(q)>m) break;
+            s64 r=X(p,q);
+            if (D(r)>=k) r&=((1LL<<k)-1)<<(D(r)-k+1);
+            d[r]-=t;
+        }
+    }
+
+    s64 s,w=1LL<<(m-k+1);  // calculate xor_prime_pi for each region of width w
+                           // above 2**m where w is approximately T**(3/4)
+    for(s=1LL<<m;s<1LL<<(m+1);s+=w){
+        s64 n=s+w-1,z=0;
+        for(auto [x,t]:d)z+=S(n,x)*t;
+        if (z+pr.size()-1>=T) break;
+        pp=z+pr.size()-1;
+    }
+
+    // at this point, pp==xor_prime_pi(s) < T <= xor_prime_pi(s+w)
+
+    s64 ss=1<<h;              // segmented sieve size for final sieve
+    s64 ds=D(ss);
+    for(;;s+=ss){
+        vector<bool> l(ss);
+        for (auto p:pr){
+            s64 dp=D(p);
+            u64 i=R(s,p);
+            for (s64 c=1;c<=1LL<<(ds-dp);c++){
+                l[i]=1;
+                i^=p*(((c^(c-1))+1)>>1);
+            }
+        }
+        s64 c; // count primes in sieve
+        for (c=0;c<ss;c++)if(!l[c])if (++pp==T) return s+c;
+    }
+}
+
+int main(){
+    cout << findxprime(5000000000) <<endl;
+}[/code]
+[/quote][/collapse]
+Just like others I recognized the connection to polynomials over the binary field, i.e. $\mathbb{F}_2[X]$.
+It was a fun challenge to implement the sieve of eratosthenes for this case, but it takes several seconds to reach up to 2^26. It must be possible to do it faster! I figure it can easily be done within a second by dividing the sieving range up into blocks to improve memory locality, but I found some ideas in this forum that lead me to devise an even more optimized approach.
+
+Indeed I was impressed and intrigued by the ideas shared by stimmer (see quoted post above) who claims to have solved the problem in just 11ms! I have been trying to improve on their approach and after several failed attempts I have finally been able to write a program that solves the problem in about 1 millisecond. It can compute the $n$th irreducible polynomial with a time complexity of about $\mathcal{O}(d 2^{\frac{2}{3}d})$ with a max. memory usage of $\mathcal{O}(2^{\frac{1}{2}d})$ where $d$ is the degree of the answer.
+
+The central idea by stimmer is to narrow the sieving range before we start to sieve by computing some of the leading bits of the sought polynomial as well as the degree.
+The latter is very easy, as the number of irreducibles of each degree is well known
+(see [url]https://oeis.org/A001037[/url]) because knowledge of Gailois theory allows for a simple formula to compute these numbers (see the answer by Qiaochu Yuan on [url]https://math.stackexchange.com/questions/152880/how-many-irreducible-polynomials-of-degree-n-exist-over-mathbbf-p[/url])
+
+Because the reverse of any irreducible polynomial is also an irreducible polynomial (except for the irreducible $X$), it is enough to compute the number of irreducibles of the required degree that falls into [b]each[/b] residue class modulo $X^k$ for some fixed integer k.
+
+(Alternatively, a binary search approach is possible where we increase $k$ in each step but only compute the number of irreducibles for [b]one[/b] irreducible class. I mistakenly understood that this was the approach taken by stimmer at first, but it turns out that computing the quantity for one residue class is not much cheaper than computing it for all residue classes).
+
+Stimmer suggests using dynamic programming. Here is what that entails.
+First number all irreducibles
+$$
+f_0, f_1, f_2, \dots
+$$
+with the ordering provided by the problem. I have chosen to start at $0$ so that all irreducibles from index $1$ upwards have the trailing bit equal to $1$.
+
+Let $\phi_k(g, d, a)$ the number of polynomials of degree $d$ congruent to $g$ modulo $X^k$ which are not divisible by any of the first $a$ irreducibles. If $D$ is the degree of the $n$-th irreducible polynomial,
+then we are interested in
+$$
+    \phi_k(g, D, \pi(\lfloor \frac{d}{2} \rfloor))
+$$
+for all (odd) $g \in \mathbb{F}_2[X] / (X^k)$, where $\pi(d)$ denotes the number of irreducibles of degree $\leq d$.
+
+To compute this, we can use the following identity
+$$
+    \phi_k(g \cdot f_{a + 1}, d + r, a + 1) = \phi_k(g \cdot f_{a + 1}, d, a) - \phi_k(g, r, a)
+$$
+This means that if we have stored $\phi_k(g, d, a)$ somewhere in memory for some fixed $a$ and all possible values of $g$ and $0 \leq d \leq D$, we can compute $\phi_k(g, d, a + 1)$ for all $g$ and $0 \leq d \leq D$
+with $\mathcal{O}(d \cdot 2^k)$ operations.
+
+As we only need the answer for $d = D$, there are some unnecessary computations that we can skip. For instance, when $a > \pi(d)$ and $1 \leq r \leq d$, $\phi_k(g, D - r, a)$ does not need to be computed for any $g$, as its values are irrelevant to the answer for degree $D$, and $\phi_k(g, r, a) = 0$ for all values of $g$.
+We can also reuse the memory where we store $\phi_k(g, r, a)$ for storing values of $\phi_k(g, r, a + 1)$. This changes the memory requirements from
+$$
+(2^{k - 1}) \cdot (D + 1) \cdot \pi(D/2) \approx 2^{k + D/2}
+$$ to 
+$$
+2^{k - 1} \cdot (D + 1)
+$$
+as the entire algorithm boils down to an inplace computation of a 2d table with dimensions $2^{k - 1} \times (D + 1)$ where we in each step we subtract rows from each other after permuting them according to the group structure of $(\mathbb{F}_2[X] / (X^k))^*$.
+
+If we apply the subtractions to our table for each $a \leq \pi(\lfloor \frac{D}{2} \rfloor)$, the optimal choice for $k$ will be around $D/4$ and the number of computations will be about $2^{\frac{3}{4} D}$. I believe this is more or less what stimmer had in mind with their dp-approach, apart from the mentioned improvement in memory usage.
+
+However we can also save on the number of computations if we only apply the above approach for $a \leq \pi(\lfloor{\frac{D}{3}}\rfloor)$.
+After that, the computed values in the $D$th row of our table are too high, but the only excess is caused by semi-irreducibles (i.e. polynomials with 2 irreducible factors) in which both factors have degree $> \lfloor \frac{D}{3} \rfloor$.
+
+However, at this point we are in the position to compute for each $d \in \{\lfloor \frac{D}{3} + 1 \rfloor, \dots, \lfloor \frac{D}{2} \rfloor\}$
+the number of semi-irreducibles that is a product of $g \cdot h$ where $g$ is irreducible of degree $d$ and $h$ is irreducible of degree $D - d$.
+Using the $d-th$ row and $D - d-th$ row of our table, we can even count this for each possible image of $g$ and $h$ in $(\mathbb{F}_2[X]/(X^k))^*$.
+A tricky case occurs when $d = D - d$, as we have to be wary of double counting a semi-irreducible. If $d < D - d$ we have for every $f \in \mathbb{F}_2[X] / (X^k)$
+$$
+   \phi_k(f, D, \pi(d)) = \phi_k(g\cdot h, D, \pi(d - 1) - \sum_{g\cdot h = f} \phi_k(g, d, \pi(d - 1)) \cdot \phi_k(h, D - d, \pi(d - 1))
+$$
+If $d = D$ the formula is slightly more complicated.
+$$
+   \phi_k(f, D, \pi(d)) = \phi_k(g\cdot h, D, \pi(d - 1) - \sum_{g : g^2 = f} \binom{\phi_k(g, d, \pi(d - 1)) + 1}{2} - \sum_{g\cdot h = f, g < f} \phi_k(g, d, \pi(d - 1)) \cdot \phi_k(h, d, \pi(d - 1))
+$$
+Both of these computations can be completed for each $f$, by considering every possible pair of $g, h \in (\mathbb{F}_2[X]/(X^k))^*$ and subtracting the right products from the $D-th$ row. This will take approximately
+$$
+  (\frac{D}{2} - \frac{D}{3}) \cdot 2^{k - 1} \cdot 2^{k - 1} 
+$$
+operations.
+If we select $k \approx D/3$, the total amount of required operations to compute
+$\phi_k(g, D, \pi(\lfloor \frac{D}{2} \rfloor))$ for all $g$ is approximately
+\[
+    \pi(\lfloor \frac{D}{3} \rfloor) \cdot D 2^{k - 1} + \frac{D}{6} \cdot 2^{2k - 2} \approx D 2^{\frac{2}{3} D}
+\]
+The extra factor of $D$ can be considered as logarithmic and thus unimportant. In practice the low memory usage of $\mathcal{O}(D 2^{k - 1})$ makes for a low constant factor, which is almost as important. From the computed results $\phi_k(g, D, \pi(\lfloor \frac{d}{2} \rfloor)$ for all $g$, it is possible to determine some $h \in (\mathbb{F}_2[X]/(X^k))^*$
+such that the nth irreducible looks like
+$$
+   rev(h)[D - k bits]1
+$$
+
+The second part is now the sieving. We first use the sieve of Erathostenes to sieve polynomials of degree at most $2^{\lfloor \frac{D}{2} \rfloor}$.
+This will take up $2^{\lfloor \frac{D}{2} \rfloor}$ bits of memory if we only consider odd polynomials.
+Now for each irreducible $f$ of degree $\leq D/2$, we mark of all members of the set
+$$
+   M(f, h) = \{g f : \deg(gf) = D, gf \text{ starts with } rev(h) \text{ and } gf == 1 \bmod X \}
+$$
+This is done by computing one $g$ such that $gf \in M(f, h)$ and observing that the others ones have the same leading $k$-bits and end in a $1$, but there is freedom in the remaining bits.
+For extra efficiency, I have divided the sieving range up into blocks. This means that we mark for every $\tilde{h}$ such that $\tilde{h} \cong h \bmod X^k$ and irreducible $f$ of degree $\leq D/2$, the multiples in $M(f, \tilde{h})$ while reusing memory between different choices of $\tilde{h}$.
+require a different choice of $k$ and achieve at most a factor of $\sqrt{p}$ speedup).
+
+I won't show the source code in Rust as it runs across several files and is over 600 lines (including comments and tests)  from computing the answer to the problem in 1ms, I have confirmed stimmers values for the $f_{5 * 10^{9} - 1}$ and $f_{5 * 10^{12} - 1}$ (in 0.250 and ... seconds respectively).
+
+It took 52 seconds for my program to compute
+$$
+    f_{10^{13} - 1}(2) = 467464240496629
+$$
+and after 495 seconds my program gives
+$$
+    f_{10^{14} - 1}(2) = 5015850896521673
+$$
+At this point the sieving becomes slow, because even the blocks I have divided the search space into of size $$2^{D/2}$$ are much larger than the cache.
+I believe an improvement to the performance for very large values can still be made by changing the algorithm to use blocks of size $$2^{D/3}$$ in the sieving part, but there are some extra complications in that because you then have to keep track about which sieving irreducibles have multiples in which block. (But I believe it is feasible, and will probably come back to this project at a later time to make these improvements).
