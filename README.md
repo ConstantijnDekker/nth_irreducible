@@ -24,4 +24,10 @@ The algorithm I designed consists of two parts.
 
 The time complexity is about O(2^(2D/3)) where D is the degree of the answer (disregarding some smaller log factors). The source code contains further explanations, but I have also written more about the algorithm in a post on project euler.
 
-The program is written in rust. With the correct version of rust installed (written in 1.73.0), it can be run and tested by the appropriate cargo commands.
+The program is written in rust and runs with a single thread. With the correct version of rust installed (written in 1.73.0), it can be run and tested by the appropriate cargo commands.
+
+With an 12th gen i7 processor, I have computed the answer for n = 10^13 ( - 1)
+which is
+nth-irreducible (string): x^52 + x^48 + x^47 + x^46 + x^44 + x^40 + x^39 + x^38 + x^37 + x^33 + x^32 + x^31 + x^30 + x^27 + x^25 + x^23 + x^22 + x^21 + x^19 + x^18 + x^17 + x^15 + x^14 + x^13 + x^12 + x^11 + x^8 + x^7 + x^6 + x^3 + 1.
+nth-irreducible (numeric): 5015850896521673
+Computation time: 495.14087 seconds
